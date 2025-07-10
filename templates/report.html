@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Report - Face Recognition System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div style="display: flex; align-items: center; margin-bottom: 24px;">
+                <a href="/" class="back-link" style="margin-right: 24px; font-size: 2em;">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div style="flex: 1; text-align: center;">
+                    <h1 style="margin-bottom: 0.2em;"><i class="fas fa-chart-bar"></i> Generate Report</h1>
+                    <p style="margin-top: 0; color: #555;">Create detailed attendance reports for any period</p>
+                </div>
+            </div>
+
+            <div class="form-container" style="max-width: 500px; margin: 0 auto 32px auto;">
+                <div class="card" style="padding-bottom: 24px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-cog"></i> Report Settings</h3>
+                    </div>
+                    <form method="post" id="reportForm">
+                        <div class="form-group" style="margin-bottom: 18px;">
+                            <label for="period"><i class="fas fa-calendar"></i> Report Period</label>
+                            <select id="period" name="period" class="form-control">
+                                <option value="daily">Daily Report</option>
+                                <option value="weekly">Weekly Report</option>
+                                <option value="monthly">Monthly Report</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn" id="generateBtn" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-file-csv"></i> Download Filtered Attendance CSV
+                        </button>
+                    </form>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <a href="{{ url_for('download_complete_attendance') }}" class="btn" style="background-color: #27ae60; display: inline-block; text-decoration: none;">
+                            <i class="fas fa-download"></i> Download Complete Attendance CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {% if analytics_labels and analytics_data %}
+            <div class="card" style="max-width: 700px; margin: 0 auto 32px auto;">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-bar"></i> Attendance Analytics</h3>
+                </div>
+                <div style="padding: 24px;">
+                    <canvas id="attendanceChart" height="120"></canvas>
+                </div>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                const ctx = document.getElementById('attendanceChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ analytics_labels|tojson }},
+                        datasets: [{
+                            label: 'Number of Students Present',
+                            data: {{ analytics_data|tojson }},
+                            backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 1,
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: { display: true, text: 'Date' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Number of Students Present' },
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            </script>
+            {% endif %}
+
+            <!-- Delete Enrolled Students Section -->
+            <div class="card" style="max-width: 700px; margin: 0 auto 32px auto;">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-user-minus"></i> Delete Enrolled Students</h3>
+                </div>
+                <div style="padding: 24px;">
+                    {% if students and students|length > 0 %}
+                    <table style="margin: 0 auto; border-collapse: collapse; min-width: 320px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <thead>
+                            <tr style="background: #f0f2ff;">
+                                <th style="padding: 8px 20px; border-bottom: 2px solid #e74c3c; text-align: left;">User ID</th>
+                                <th style="padding: 8px 20px; border-bottom: 2px solid #e74c3c; text-align: left;">Name</th>
+                                <th style="padding: 8px 20px; border-bottom: 2px solid #e74c3c; text-align: left;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for s in students %}
+                            <tr style="background: {% if loop.index0 % 2 == 0 %}#fff{% else %}#f8f9fa{% endif %};">
+                                <td style="padding: 8px 20px; border-bottom: 1px solid #eee; text-align: left;">{{ s.user_id }}</td>
+                                <td style="padding: 8px 20px; border-bottom: 1px solid #eee; text-align: left;">{{ s.name }}</td>
+                                <td style="padding: 8px 20px; border-bottom: 1px solid #eee; text-align: left;">
+                                    <form method="post" action="/delete_student" style="display:inline;">
+                                        <input type="hidden" name="user_id" value="{{ s.user_id }}">
+                                        <button type="submit" class="btn" style="background: #e74c3c; color: #fff; padding: 4px 14px; border-radius: 6px; border: none; cursor: pointer;">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>No students enrolled yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 24px; justify-content: center;">
+                <div class="card" style="flex: 1 1 320px; min-width: 320px; max-width: 500px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-info-circle"></i> Report Information</h3>
+                    </div>
+                    <div class="row" style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+                        <div>
+                            <h4><i class="fas fa-calendar-day"></i> Daily Report</h4>
+                            <p>Shows attendance for the current day with detailed timestamps.</p>
+                        </div>
+                        <div>
+                            <h4><i class="fas fa-calendar-week"></i> Weekly Report</h4>
+                            <p>Summarizes attendance for the current week with daily breakdowns.</p>
+                        </div>
+                        <div>
+                            <h4><i class="fas fa-calendar-alt"></i> Monthly Report</h4>
+                            <p>Comprehensive monthly attendance summary with statistics.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="flex: 1 1 320px; min-width: 320px; max-width: 500px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-star"></i> Report Features</h3>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+                        <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 10px;">
+                            <i class="fas fa-clock fa-2x" style="color: #667eea; margin-bottom: 10px;"></i>
+                            <h4>Time Tracking</h4>
+                            <p>Precise check-in and check-out times</p>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 10px;">
+                            <i class="fas fa-user-check fa-2x" style="color: #27ae60; margin-bottom: 10px;"></i>
+                            <h4>Attendance Status</h4>
+                            <p>Present, absent, and late status tracking</p>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 10px;">
+                            <i class="fas fa-chart-line fa-2x" style="color: #e74c3c; margin-bottom: 10px;"></i>
+                            <h4>Analytics</h4>
+                            <p>Attendance trends and statistics</p>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 10px;">
+                            <i class="fas fa-print fa-2x" style="color: #f39c12; margin-bottom: 10px;"></i>
+                            <h4>Print Ready</h4>
+                            <p>Professional formatting for printing</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add loading state to button
+        document.getElementById('reportForm').addEventListener('submit', function(e) {
+            const button = document.getElementById('generateBtn');
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '<span class="loading"></span> Generating Report...';
+            button.disabled = true;
+            
+            // Re-enable button after 5 seconds if page doesn't redirect
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 5000);
+        });
+
+        // Update format description based on selection
+        document.getElementById('format').addEventListener('change', function() {
+            const format = this.value;
+            const descriptions = {
+                'pdf': 'Professional PDF document suitable for printing and sharing',
+                'xlsx': 'Excel spreadsheet for data analysis and further processing'
+            };
+            
+            // You can add logic here to update descriptions dynamically
+            console.log('Selected format:', format);
+        });
+    </script>
+</body>
+</html> 

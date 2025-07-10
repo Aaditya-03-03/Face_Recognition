@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="header">
+                <h1><i class="fas fa-user-check"></i> Face Recognition Attendance System</h1>
+                <p>Advanced facial recognition for automated attendance tracking</p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Navigation Menu -->
+            <div class="nav-menu">
+                <a href="/enroll" class="nav-card">
+                    <i class="fas fa-user-plus fa-2x mb-20"></i>
+                    <h3>Enroll New Face</h3>
+                    <p>Add new users to the system by uploading photos or capturing from webcam</p>
+                </a>
+                
+                <a href="/recognize" class="nav-card">
+                    <i class="fas fa-camera fa-2x mb-20"></i>
+                    <h3>Start Recognition</h3>
+                    <p>Begin attendance tracking using facial recognition technology</p>
+                </a>
+                
+                <a href="/report" class="nav-card">
+                    <i class="fas fa-chart-bar fa-2x mb-20"></i>
+                    <h3>Generate Reports</h3>
+                    <p>Create detailed attendance reports in PDF or Excel format</p>
+                </a>
+                
+                <!-- Removed Export Attendance button from dashboard -->
+            </div>
+
+            <!-- Enrolled Students Info -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-users"></i> Enrolled Students</h3>
+                </div>
+                <div class="text-center">
+                    <p><strong>Total Enrolled:</strong> {{ student_count }}</p>
+                    {% if students and students|length > 0 %}
+                    <table style="margin: 0 auto; border-collapse: collapse; min-width: 320px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <thead>
+                            <tr style="background: #f0f2ff;">
+                                <th style="padding: 8px 20px; border-bottom: 2px solid #764ba2; text-align: left;">User ID</th>
+                                <th style="padding: 8px 20px; border-bottom: 2px solid #764ba2; text-align: left;">Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for s in students %}
+                            <tr style="background: {% if loop.index0 % 2 == 0 %}#fff{% else %}#f8f9fa{% endif %};">
+                                <td style="padding: 8px 20px; border-bottom: 1px solid #eee; text-align: left;">{{ s.user_id }}</td>
+                                <td style="padding: 8px 20px; border-bottom: 1px solid #eee; text-align: left;">{{ s.name }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>No students enrolled yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-info-circle"></i> System Status</h3>
+                </div>
+                <div class="text-center">
+                    <p><strong>Ready to use:</strong> All systems are operational</p>
+                    <p><strong>Last updated:</strong> <span id="current-time"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html> 

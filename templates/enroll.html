@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enroll New Face - Face Recognition System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div style="display: flex; align-items: center; margin-bottom: 24px;">
+                <a href="/" class="back-link" style="margin-right: 24px; font-size: 2em;">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div style="flex: 1; text-align: center;">
+                    <h1 style="margin-bottom: 0.2em;"><i class="fas fa-user-plus"></i> Enroll New Face</h1>
+                    <p style="margin-top: 0; color: #555;">Add new users to the attendance system</p>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="form-container">
+                <form id="uploadForm" method="post" enctype="multipart/form-data">
+                    <!-- User Information -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-user"></i> User Information</h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="user_id"><i class="fas fa-id-card"></i> User ID</label>
+                            <input type="text" id="user_id" name="user_id" class="form-control" required 
+                                   placeholder="Enter unique user ID">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="name"><i class="fas fa-user"></i> Full Name</label>
+                            <input type="text" id="name" name="name" class="form-control" required 
+                                   placeholder="Enter full name">
+                        </div>
+                    </div>
+
+                    <!-- Image Upload Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-upload"></i> Upload Image</h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="image"><i class="fas fa-image"></i> Choose Image File</label>
+                            <div class="file-upload">
+                                <input type="file" id="image" name="image" accept="image/*">
+                                <label for="image" class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt fa-2x"></i><br>
+                                    <span>Click to browse or drag and drop image here</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Webcam Capture Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-camera"></i> Capture from Webcam</h3>
+                        </div>
+                        
+                        <div class="webcam-container">
+                            <div class="video-container">
+                                <video id="video" width="400" height="300" autoplay muted></video>
+                                <canvas id="canvas" width="400" height="300"></canvas>
+                            </div>
+                            
+                            <div class="webcam-controls">
+                                <button type="button" class="btn btn-success" onclick="capture()">
+                                    <i class="fas fa-camera"></i> Capture Photo
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="retake()">
+                                    <i class="fas fa-redo"></i> Retake
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="webcam_image" id="webcam_image">
+                    </div>
+
+                    <!-- Submit Section -->
+                    <div class="text-center mt-20">
+                        <button type="submit" class="btn">
+                            <i class="fas fa-save"></i> Enroll User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const webcamInput = document.getElementById('webcam_image');
+        const fileInput = document.getElementById('image');
+        let captured = false;
+
+        // Initialize webcam
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 400 },
+                    height: { ideal: 300 }
+                } 
+            })
+            .then(stream => { 
+                video.srcObject = stream; 
+            })
+            .catch(err => {
+                console.error('Error accessing webcam:', err);
+                alert('Unable to access webcam. Please use file upload instead.');
+            });
+        }
+
+        function capture() {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, 400, 300);
+            canvas.style.display = 'block';
+            video.style.display = 'none';
+            webcamInput.value = canvas.toDataURL('image/jpeg', 0.8);
+            captured = true;
+        }
+
+        function retake() {
+            canvas.style.display = 'none';
+            video.style.display = 'block';
+            webcamInput.value = '';
+            captured = false;
+        }
+
+        // File upload preview
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Clear webcam capture if file is selected
+                    webcamInput.value = '';
+                    captured = false;
+                    canvas.style.display = 'none';
+                    video.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Form validation
+        document.getElementById('uploadForm').onsubmit = function(e) {
+            const file = fileInput.files[0];
+            if (!file && !webcamInput.value) {
+                e.preventDefault();
+                alert('Please upload an image or capture from webcam.');
+                return false;
+            }
+            return true;
+        };
+
+        // File upload drag and drop
+        const fileUploadLabel = document.querySelector('.file-upload-label');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileUploadLabel.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileUploadLabel.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileUploadLabel.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            fileUploadLabel.style.borderColor = '#764ba2';
+            fileUploadLabel.style.background = '#f0f2ff';
+        }
+
+        function unhighlight(e) {
+            fileUploadLabel.style.borderColor = '#667eea';
+            fileUploadLabel.style.background = '#f8f9fa';
+        }
+
+        fileUploadLabel.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,9 @@
+face_recognition
+opencv-python
+numpy
+pandas
+datetime
+pickle-mixin
+reportlab
+xlsxwriter
+Flask 

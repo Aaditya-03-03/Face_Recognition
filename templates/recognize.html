@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition - Face Recognition System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div style="display: flex; align-items: center; margin-bottom: 24px;">
+                <a href="/" class="back-link" style="margin-right: 24px; font-size: 2em;">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div style="flex: 1; text-align: center;">
+                    <h1 style="margin-bottom: 0.2em;"><i class="fas fa-camera"></i> Face Recognition</h1>
+                    <p style="margin-top: 0; color: #555;">Start attendance tracking using facial recognition</p>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if result %}
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-user-check"></i> Recognition Result</h3>
+                </div>
+                <div class="text-center">
+                    <p><strong>Name:</strong> {{ result.name }}</p>
+                    <p><strong>User ID:</strong> {{ result.user_id }}</p>
+                    <p><strong>Status:</strong> {{ result.status }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="form-container" style="max-width: 500px; margin: 0 auto 32px auto;">
+                <div class="card" style="padding-bottom: 24px;">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-play-circle"></i> Start Recognition Session</h3>
+                    </div>
+                    <div class="text-center">
+                        <div class="mb-20">
+                            <i class="fas fa-camera fa-4x" style="color: #667eea; margin-bottom: 20px;"></i>
+                            <h3>Ready to Start Recognition?</h3>
+                            <p>This will activate your webcam and begin facial recognition for attendance tracking.</p>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Important:</strong> Make sure your webcam is connected and you have good lighting for accurate recognition.
+                        </div>
+                        <form method="post" id="recognitionForm" enctype="multipart/form-data">
+                            <div class="form-group" style="display: flex; flex-direction: column; align-items: center;">
+                                <label style="margin-bottom: 10px;">Capture from Webcam</label>
+                                <video id="webcam" width="320" height="240" autoplay style="display:none; margin-bottom: 10px;"></video>
+                                <canvas id="canvas" width="320" height="240" style="display:none; margin-bottom: 10px;"></canvas>
+                                <input type="hidden" name="webcam_image" id="webcam_image">
+                                <button type="button" class="btn" id="startWebcamBtn" style="margin-bottom: 10px;"><i class="fas fa-video"></i> Start Webcam</button>
+                                <button type="button" class="btn" id="captureBtn" style="display:none; margin-bottom: 10px;"><i class="fas fa-camera"></i> Capture</button>
+                            </div>
+                            <div style="display: flex; justify-content: center;">
+                                <button type="submit" class="btn" id="startBtn" disabled>
+                                    <i class="fas fa-play"></i> Recognize Face
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-info-circle"></i> Instructions</h3>
+                    </div>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 10px;">
+                            <i class="fas fa-check-circle" style="color: #27ae60; margin-right: 10px;"></i>
+                            Ensure good lighting conditions
+                        </li>
+                        <li style="margin-bottom: 10px;">
+                            <i class="fas fa-check-circle" style="color: #27ae60; margin-right: 10px;"></i>
+                            Position your face clearly in the camera view
+                        </li>
+                        <li style="margin-bottom: 10px;">
+                            <i class="fas fa-check-circle" style="color: #27ae60; margin-right: 10px;"></i>
+                            Remove glasses or hats if they interfere with recognition
+                        </li>
+                        <li style="margin-bottom: 10px;">
+                            <i class="fas fa-check-circle" style="color: #27ae60; margin-right: 10px;"></i>
+                            Stay still during the recognition process
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Webcam capture logic
+        const startWebcamBtn = document.getElementById('startWebcamBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const webcam = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const webcamImageInput = document.getElementById('webcam_image');
+        const startBtn = document.getElementById('startBtn');
+
+        let stream = null;
+        if(startWebcamBtn) {
+            startWebcamBtn.onclick = async function() {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                webcam.srcObject = stream;
+                webcam.style.display = 'block';
+                captureBtn.style.display = 'inline-block';
+                startWebcamBtn.style.display = 'none';
+            };
+        }
+        if(captureBtn) {
+            captureBtn.onclick = function() {
+                canvas.getContext('2d').drawImage(webcam, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/jpeg');
+                webcamImageInput.value = dataUrl;
+                webcam.style.display = 'none';
+                captureBtn.style.display = 'none';
+                if(stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                alert('Image captured! Now submit the form to recognize.');
+                startBtn.disabled = false;
+            };
+        }
+        // Prevent form submission if no image is captured
+        document.getElementById('recognitionForm').addEventListener('submit', function(e) {
+            if (!webcamImageInput.value) {
+                alert('Please capture an image from webcam before submitting.');
+                e.preventDefault();
+                return false;
+            }
+            const button = document.getElementById('startBtn');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="loading"></span> Recognizing...';
+            button.disabled = true;
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 3000);
+        });
+    </script>
+</body>
+</html> 
